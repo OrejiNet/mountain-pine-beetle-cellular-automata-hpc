@@ -50,6 +50,46 @@ def pino(draw, x, base, alto, color):
         draw.polygon([(x - a / 2, y0), (x + a / 2, y0), (x, y0 - alto * 0.42)], fill=color)
 
 
+def escarabajo(L, color, angulo=0):
+    """Silueta de un escarabajo de corteza en un lienzo de L x L, rotada `angulo` grados.
+
+    Cuerpo cilíndrico (élitros + pronoto), cabeza chica, 6 patas articuladas y
+    antenas acodadas con maza, como Dendroctonus.
+    """
+    c = Image.new("RGBA", (L, L), (0, 0, 0, 0))
+    d = ImageDraw.Draw(c)
+    u = L / 100.0                       # unidad: el dibujo vive en 100 x 100
+    cx = 50 * u
+    grosor = max(1, int(3.8 * u))
+
+    def P(x, y):
+        return (x * u, y * u)
+
+    # Patas (3 por lado), cortas y gruesas: fémur + tibia
+    for y_base, (dx1, dy1), (dx2, dy2) in [(36, (-9, -4), (-3, -7)),
+                                            (50, (-11, 1), (-3, 7)),
+                                            (64, (-9, 6), (-2, 8))]:
+        for s in (-1, 1):
+            x0 = 50 + s * 9
+            x1, y1 = x0 + s * -dx1, y_base + dy1
+            x2, y2 = x1 + s * -dx2, y1 + dy2
+            d.line([P(x0, y_base), P(x1, y1), P(x2, y2)], fill=color, width=grosor, joint="curve")
+    # Antenas cortas, acodadas, con maza
+    for s in (-1, 1):
+        d.line([P(50 + s * 4, 16), P(50 + s * 8, 10), P(50 + s * 12, 10)], fill=color,
+               width=max(1, int(2.2 * u)), joint="curve")
+        d.ellipse([P(50 + s * 12 - 3, 7), P(50 + s * 12 + 3, 13)], fill=color)
+    # Cabeza, pronoto y élitros (cuerpo cilíndrico y robusto)
+    d.ellipse([P(42, 12), P(58, 26)], fill=color)
+    d.rounded_rectangle([P(35, 21), P(65, 44)], radius=11 * u, fill=color)
+    d.rounded_rectangle([P(34, 42), P(66, 88)], radius=16 * u, fill=color)
+    # Separación pronoto-élitros y sutura (líneas claras, sutiles)
+    claro = (255, 190, 170, 80)
+    d.line([P(38, 43), P(62, 43)], fill=claro, width=max(1, int(1.0 * u)))
+    d.line([P(50, 46), P(50, 85)], fill=claro, width=max(1, int(1.0 * u)))
+    return c.rotate(angulo, resample=Image.BICUBIC, expand=False)
+
+
 def capa_montes(base_y, amp, color, semilla, frec=3):
     r = np.random.default_rng(semilla)
     xs = np.linspace(0, 1, 400)
@@ -93,6 +133,13 @@ def main():
         y0 = cy + R * (0.12 + 0.13 * k)
         ds.rectangle([cx - R, y0, cx + R, y0 + (2 + k * 1.6) * S], fill=(0, 0, 0, 0))
     img = Image.alpha_composite(img, sol)
+
+    # Escarabajo en silueta frente al sol
+    L = int(R * 0.95)
+    bicho = escarabajo(L, (38, 16, 44, 235), angulo=-24)
+    capa = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    capa.paste(bicho, (int(cx - L / 2 + R * 0.05), int(cy - L / 2 - R * 0.28)), bicho)
+    img = Image.alpha_composite(img, capa)
 
     # --- Montañas ------------------------------------------------------------
     img = Image.alpha_composite(img, capa_montes(0.66, 0.035, (120, 62, 122, 255), 1))
