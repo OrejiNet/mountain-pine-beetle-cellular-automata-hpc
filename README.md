@@ -2,7 +2,7 @@
 
 Proyecto del curso de Computación Paralela (USACH). Simulación de la expansión del **escarabajo del pino de montaña** (*Dendroctonus ponderosae*) con un autómata celular estocástico multiescala, paralelizado con **Numba** (memoria compartida, como OpenMP) y **MPI** (memoria distribuida, con halos y modelo BSP).
 
-Modelo base: [Liu & Estep (2025), *Royal Society Open Science*](https://doi.org/10.1098/rsos.241934).
+Modelo base: [Liu & Estep (2025), *Royal Society Open Science*](https://doi.org/10.1098/rsos.241934) ([PDF en el repo](docs/papers/Liu_Estep_2025_RSOS.pdf), licencia CC BY 4.0).
 
 > **Estado:** esqueleto del proyecto. Las funciones tienen firma, documentación y `TODO`, pero aún no están implementadas.
 
@@ -35,6 +35,7 @@ slurm/            script para el clúster Xi
 datos/            mapas de entrada (.npy)
 resultados/       salidas (no se versionan)
 docs/             modelo, paralelización, referencias
+  papers/         paper base en PDF
 ```
 
 ## Instalación

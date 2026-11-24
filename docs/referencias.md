@@ -3,6 +3,7 @@
 ## Paper base
 
 - **Liu, Y. & Estep, D. (2025).** A multiscale stochastic cellular automata model for dispersion of mountain pine beetles. *Royal Society Open Science*, 12: 241934. <https://doi.org/10.1098/rsos.241934>
+  - PDF: [`papers/Liu_Estep_2025_RSOS.pdf`](papers/Liu_Estep_2025_RSOS.pdf) (acceso abierto, CC BY 4.0)
   - Código: <https://github.com/Irene-liu-724/MPB-Infestation>
   - Tesis asociada: Liu, Y. *A Multiscale Stochastic Cellular Automaton Model for Dispersion Process with Applications to Mountain Pine Beetle Infestations*, Simon Fraser University. <https://summit.sfu.ca/_flysystem/fedora/2024-06/etd23087.pdf>
   - Imagen aérea para calibrar (ScienceBase): <https://www.sciencebase.gov/catalog/item/560312d0e4b03bc34f5449aa>
