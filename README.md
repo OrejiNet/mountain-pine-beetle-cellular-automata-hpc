@@ -1,3 +1,5 @@
+![Mountain pine beetle — cellular automata HPC](docs/img/portada.png)
+
 # Mountain Pine Beetle Cellular Automata HPC 🪲🌲
 
 Proyecto del curso de Computación Paralela (USACH). Simulación de la expansión del **escarabajo del pino de montaña** (*Dendroctonus ponderosae*) con un autómata celular estocástico multiescala, paralelizado con **Numba** (memoria compartida, como OpenMP) y **MPI** (memoria distribuida, con halos y modelo BSP).
