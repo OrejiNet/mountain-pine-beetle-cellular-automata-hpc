@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Salidas de simulación (se regeneran)
+resultados/*
+!resultados/.gitkeep
+
+# Datos pesados (descargar aparte, ver docs/modelo.md)
+datos/*.tif
+datos/*.jpg
