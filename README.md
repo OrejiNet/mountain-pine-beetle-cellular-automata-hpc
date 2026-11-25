@@ -90,7 +90,7 @@ pytest -q
 
 ## Equipo
 
-Cristopher Angulo · Estrella Parraguez · Pablo
+Cristopher Angulo · Estrella Parraguez · Pablo Figueroa
 
 ## Referencias
 
