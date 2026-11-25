@@ -114,6 +114,31 @@ a{color:var(--peach)}
   </div>
 </section>
 
+<!-- 3b. Variables -->
+<section class="slide">
+  <h2>Las variables del modelo</h2>
+  <div class="split" style="grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)">
+    <div class="scroll card">
+      <table>
+        <thead><tr><th>Símbolo</th><th>Qué es</th><th>Rango</th><th>Dónde</th></tr></thead>
+        <tbody id="tb-vars"></tbody>
+      </table>
+    </div>
+    <div class="steps" style="align-content:start">
+      <div class="card"><h3>Estado</h3>La única variable que se guarda de un año a otro es <b>π<sub>ij</sub></b>, la densidad de escarabajos de cada celda. Todo lo demás se recalcula cada año a partir de ella.</div>
+      <div class="card"><h3>En el código</h3>
+        <ul style="margin:0">
+          <li><code>P</code>: π en el año t, con una celda de relleno por borde</li>
+          <li><code>E</code>: lo que emite cada celda (e)</li>
+          <li><code>Pn</code>: π en el año t+1 (doble buffer)</li>
+          <li><code>fila_inicio</code>: fila global de la primera fila del proceso</li>
+          <li><code>rank</code>: número del proceso MPI</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- 4. Regla 1 -->
 <section class="slide" data-anim="micro">
   <h2>Regla 1: la población crece o decrece dentro de la celda</h2>
@@ -138,8 +163,8 @@ a{color:var(--peach)}
   <div class="split">
     <div>
       <p>Se compara la celda con el promedio de su vecindad de 7 celdas:</p>
-      <div class="eq">π̄<sub><i>ij</i></sub> = ( π<sub><i>ij</i></sub> + Σ<sub>vecinos</sub> π<sub><i>kl</i></sub> ) / 7</div>
-      <div class="eq"><i>e</i><sub><i>ij</i></sub> = γ₁ · (π<sub><i>ij</i></sub> − π̄<sub><i>ij</i></sub>) &nbsp;si π<sub><i>ij</i></sub> &gt; π̄<sub><i>ij</i></sub>, &nbsp;si no 0</div>
+      <div class="eq"><span style="text-decoration:overline">π</span><sub><i>ij</i></sub> = ( π<sub><i>ij</i></sub> + Σ<sub>vecinos</sub> π<sub><i>kl</i></sub> ) / 7</div>
+      <div class="eq"><i>e</i><sub><i>ij</i></sub> = γ₁ · (π<sub><i>ij</i></sub> − <span style="text-decoration:overline">π</span><sub><i>ij</i></sub>) &nbsp;si π<sub><i>ij</i></sub> &gt; <span style="text-decoration:overline">π</span><sub><i>ij</i></sub>, &nbsp;si no 0</div>
       <ul>
         <li>Es la <b>presión por hacinamiento</b>: se van de donde hay más hacia donde hay menos.</li>
         <li>Emigra γ₁ = 0,8 del exceso sobre el promedio.</li>
@@ -302,7 +327,7 @@ for t in range(años):
 </main>
 <nav aria-label="Navegación de diapositivas">
   <button id="prev" aria-label="Anterior">←</button>
-  <span id="num">1 / 14</span>
+  <span id="num">1 / 15</span>
   <button id="next" aria-label="Siguiente">→</button>
   <div class="bar"><i id="bar"></i></div>
   <button id="full">Pantalla completa</button>
@@ -492,6 +517,20 @@ function paso(P, R, C, p, M) {
     if (best && bd < (L.s*1.1)**2 && (best[0]!==sel[0]||best[1]!==sel[1])) { sel=best; draw(); } };
   cv.addEventListener('pointermove', pick); cv.addEventListener('pointerdown', pick);
 }
+
+/* ---------- 3b. tabla de variables ---------- */
+document.getElementById('tb-vars').innerHTML = [
+  ['<i>i</i>, <i>j</i>','fila y columna de la celda','enteros','todas'],
+  ['<i>t</i>','año (paso macroscópico)','0, 1, 2, …','todas'],
+  ['π<sub><i>ij</i></sub>(<i>t</i>)','densidad de escarabajos de la celda: el estado','[0, 1]','todas'],
+  ['<i>n</i>, <i>X</i>','individuos en la celda durante la microescala','0 … C','regla 1'],
+  ['Δτ','paso de tiempo dentro del año','1/N','regla 1'],
+  ['<i>u</i>','número aleatorio uniforme','[0, 1)','reglas 1 y 3'],
+  ['<span style="text-decoration:overline">π</span><sub><i>ij</i></sub>','promedio de la vecindad de 7 celdas','[0, 1]','regla 2'],
+  ['<i>e</i><sub><i>ij</i></sub>','densidad que emigra de la celda','[0, 0,69]','regla 2'],
+  ['llegada<sub><i>ij</i></sub>','densidad que llega desde la vecindad','≥ 0','regla 3'],
+  ['<i>p</i><sub>S</sub>','probabilidad de que una celda vacía se colonice','[1/3, 0,60]','regla 3']
+].map(([a,b,c,d]) => `<tr><td style="white-space:nowrap">${a}</td><td>${b}</td><td style="white-space:nowrap">${c}</td><td style="white-space:nowrap">${d}</td></tr>`).join('');
 
 /* ---------- 4. trayectorias de la microescala ---------- */
 {
