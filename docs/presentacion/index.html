@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reglas escarabajo del pino</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE  clase de magíster: técnica pero cálida, la misma noche lofi de la portada del repo
+   IDEA   un bosque al atardecer visto como grilla: cada diapositiva es un pedazo del mismo bosque
+   PICTURE canvas vivos: vecindad hexagonal, trayectorias estocásticas, el autómata corriendo, procesos MPI con halos
+   COLOUR fondo índigo noche, tinta crema, durazno y coral para la infestación, óxido para pinos muertos
+   TYPE   Poppins para títulos, Nunito Sans para texto
+   LAYOUT diapositivas 16:9 con scroll lateral; texto a la izquierda y figura a la derecha, o figura bajo el título; en teléfono todo apilado */
+:root{color-scheme:dark;--bg:#17112b;--panel:#221a3d;--line:#3a2d5c;--ink:#f6ece6;--soft:#cdbcd9;--peach:#ffc48a;--coral:#ff7a6b;--red:#e2475e;--rust:#b04a3c;--violet:#7a55a6}
+*{box-sizing:border-box;min-width:0}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:17px/1.55 "Nunito Sans",system-ui,sans-serif;overflow:hidden}
+h1,h2,h3{font-family:Poppins,system-ui,sans-serif;line-height:1.08;letter-spacing:-.02em;margin:0;text-wrap:balance}
+h1{font-size:clamp(36px,5.6vw,72px);font-weight:700}
+h2{font-size:clamp(28px,3.4vw,46px);font-weight:700}
+h3{font-size:clamp(18px,1.6vw,22px);font-weight:500;color:var(--peach)}
+p{margin:.6em 0}
+.deck{display:flex;height:100%;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scrollbar-width:none}
+.deck::-webkit-scrollbar{display:none}
+.slide{flex:0 0 100%;height:100%;scroll-snap-align:start;overflow-y:auto;padding:clamp(22px,4vw,56px) max(5vw,16px) 92px;display:flex;flex-direction:column;gap:clamp(14px,2vw,26px);position:relative}
+.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:clamp(18px,3vw,44px);flex:1;align-items:stretch}
+.fig{position:relative;min-height:320px;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.fig>canvas,.fig>svg{position:absolute;inset:0;width:100%;height:100%}
+.lead{font-size:clamp(17px,1.5vw,20px);color:var(--soft);max-width:62ch}
+ul{margin:.4em 0;padding-left:1.1em}li{margin:.35em 0}
+b{color:var(--peach);font-weight:700}
+.eq{font-family:"Cambria Math","STIX Two Math","Times New Roman",serif;font-size:clamp(18px,1.7vw,23px);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin:.6em 0;overflow-x:auto;white-space:nowrap}
+.eq i{color:var(--peach)}
+.cap{position:absolute;left:14px;bottom:12px;right:14px;font-size:14px;color:var(--soft);pointer-events:none}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:Poppins,sans-serif;font-weight:500;color:var(--peach)}
+td.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.scroll{overflow-x:auto}
+.ctrl{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
+button{font:600 15px "Nunito Sans",sans-serif;color:var(--ink);background:#33285a;border:1px solid #5a4690;border-radius:999px;min-height:44px;padding:0 18px;cursor:pointer}
+button:hover{background:#40326e}button:focus-visible,input:focus-visible{outline:2px solid var(--peach);outline-offset:2px}
+button.on{background:var(--coral);border-color:var(--coral);color:#2a0f1a}
+label{font-size:15px;color:var(--soft);display:flex;align-items:center;gap:8px;white-space:nowrap}
+input[type=range]{accent-color:var(--coral);width:120px;height:28px}
+.stats{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:15px;color:var(--soft)}
+.stats strong{font:700 22px Poppins,sans-serif;color:var(--ink);font-variant-numeric:tabular-nums;margin-right:4px}
+.steps{display:grid;gap:8px}
+.step{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;transition:border-color .2s,background .2s}
+.step.act{border-color:var(--coral);background:#3a2140}
+.dot{width:14px;height:14px;border-radius:50%}
+pre{background:#100c20;border:1px solid var(--line);border-radius:10px;padding:14px 16px;font:14px/1.5 ui-monospace,Menlo,Consolas,monospace;color:#f3dccf;overflow-x:auto;margin:.5em 0}
+pre .c{color:#a58fc2}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(15em,1fr));gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 18px}
+.card h3{margin-bottom:.3em}
+.team{font-size:clamp(16px,1.4vw,19px);color:var(--soft)}
+.cover{justify-content:flex-end;padding-bottom:110px}
+.cover .fig{position:absolute;inset:0;border:0;border-radius:0;background:transparent}
+.cover>*:not(.fig){position:relative}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;align-items:center;gap:10px;padding:10px max(5vw,16px);background:linear-gradient(transparent,rgba(16,11,32,.92) 40%);z-index:5}
+nav .bar{flex:1;height:4px;background:var(--line);border-radius:2px;overflow:hidden}
+nav .bar i{display:block;height:100%;width:0;background:var(--coral);transition:width .25s}
+#num{font:500 15px Poppins,sans-serif;color:var(--soft);min-width:4.5em;text-align:center;font-variant-numeric:tabular-nums}
+a{color:var(--peach)}
+@media(max-width:820px){.split{grid-template-columns:minmax(0,1fr)}.fig{min-height:300px}body{font-size:16px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+</style>
+</head>
+<body>
+<main class="deck" id="deck">
+
+<!-- 1. Portada -->
+<section class="slide cover" data-anim="portada">
+  <div class="fig"><canvas id="cv-portada"></canvas></div>
+  <h1>Escarabajo del pino de montaña</h1>
+  <p class="lead">Reglas del autómata celular estocástico y su paralelización híbrida con MPI + Numba</p>
+  <p class="team">Cristopher Angulo · Estrella Parraguez · Pablo — Computación Paralela, USACH</p>
+</section>
+
+<!-- 2. El sistema -->
+<section class="slide">
+  <h2>El sistema: una plaga que avanza por el bosque</h2>
+  <div class="split">
+    <div>
+      <p class="lead">El escarabajo del pino de montaña (<i>Dendroctonus ponderosae</i>) coloniza pinos, los mata en masa y salta a los parches vecinos. Desde 1990 mató cerca del 50% del volumen comercial de pino lodgepole de Columbia Británica.</p>
+      <ul>
+        <li>Lo que interesa es <b>dónde y qué tan rápido</b> se expande la mancha.</li>
+        <li>El avance depende sobre todo de lo que pasa <b>cerca</b> de cada parche, así que un autómata celular encaja bien.</li>
+        <li>Modelo base: <b>Liu &amp; Estep (2025)</b>, <i>Royal Society Open Science</i>: un autómata estocástico en dos escalas, con código público y calibrado con una imagen aérea real.</li>
+      </ul>
+    </div>
+    <div class="fig"><canvas id="cv-bosque"></canvas><div class="cap">Los pinos rojizos están muertos ("ataque rojo"); la mancha crece desde un foco.</div></div>
+  </div>
+</section>
+
+<!-- 3. Representación -->
+<section class="slide" data-anim="vecindad">
+  <h2>Cada celda es un parche de bosque, no un árbol</h2>
+  <div class="split">
+    <div>
+      <ul>
+        <li><b>Grilla hexagonal:</b> 6 vecinos, todos a la misma distancia. La vecindad completa son 7 celdas (la celda y sus vecinos).</li>
+        <li><b>Estado:</b> densidad de escarabajos π<sub>ij</sub>(t) ∈ [0, 1]. 0 es sin escarabajos y 1 es la capacidad máxima.</li>
+        <li><b>Paso de tiempo:</b> Δt = 1 año.</li>
+        <li><b>Vecinos según la paridad de la columna:</b> las columnas impares están desplazadas media celda hacia abajo.</li>
+        <li><b>Fronteras absorbentes:</b> fuera del mapa hay celdas fantasma con 0 que reciben escarabajos pero no los devuelven.</li>
+      </ul>
+    </div>
+    <div class="fig"><canvas id="cv-vecindad"></canvas><div class="cap">Pasa el cursor o toca una celda para ver sus 6 vecinos.</div></div>
+  </div>
+</section>
+
+<!-- 4. Regla 1 -->
+<section class="slide" data-anim="micro">
+  <h2>Regla 1: la población crece o decrece dentro de la celda</h2>
+  <div class="split">
+    <div>
+      <p>Proceso estocástico de nacimiento y muerte, <b>sin mirar a las vecinas</b>. Se parte de X = round(π·C) individuos y se dan N = 100 pasos chicos (Δτ = 1/N):</p>
+      <div class="eq">P(<i>n</i> → <i>n</i>+1) = <i>b</i>·<i>n</i>·(1 − <i>n</i>/<i>C</i>)·Δτ</div>
+      <div class="eq">P(<i>n</i> → <i>n</i>−1) = <i>d</i>·<i>n</i>·Δτ</div>
+      <p>Se repite en M = 20 réplicas y la nueva densidad es el promedio dividido por C.</p>
+      <ul>
+        <li>Una celda vacía <b>no crece sola</b>: sin escarabajos no hay nacimientos.</li>
+        <li>Una celda infestada tiende a C(1 − d/b) = <b>80 individuos</b>, es decir, densidad 0,8.</li>
+      </ul>
+    </div>
+    <div class="fig"><canvas id="cv-micro"></canvas><div class="cap">20 réplicas desde 10 individuos durante 10 años. <button id="b-micro" style="pointer-events:auto;min-height:36px;margin-left:8px">Simular otra vez</button></div></div>
+  </div>
+</section>
+
+<!-- 5. Regla 2 -->
+<section class="slide">
+  <h2>Regla 2: la celda decide si emigra</h2>
+  <div class="split">
+    <div>
+      <p>Se compara la celda con el promedio de su vecindad de 7 celdas:</p>
+      <div class="eq">π̄<sub><i>ij</i></sub> = ( π<sub><i>ij</i></sub> + Σ<sub>vecinos</sub> π<sub><i>kl</i></sub> ) / 7</div>
+      <div class="eq"><i>e</i><sub><i>ij</i></sub> = γ₁ · (π<sub><i>ij</i></sub> − π̄<sub><i>ij</i></sub>) &nbsp;si π<sub><i>ij</i></sub> &gt; π̄<sub><i>ij</i></sub>, &nbsp;si no 0</div>
+      <ul>
+        <li>Es la <b>presión por hacinamiento</b>: se van de donde hay más hacia donde hay menos.</li>
+        <li>Emigra γ₁ = 0,8 del exceso sobre el promedio.</li>
+        <li>Es determinista: no hay azar en esta regla.</li>
+      </ul>
+    </div>
+    <div class="fig"><svg id="sv-emision" viewBox="0 0 580 380" preserveAspectRatio="xMidYMid meet" aria-label="Ejemplo numérico de la emisión"></svg></div>
+  </div>
+</section>
+
+<!-- 6. Regla 3 -->
+<section class="slide">
+  <h2>Regla 3: llegar y establecerse</h2>
+  <div class="split">
+    <div>
+      <p>Lo emitido se reparte en partes iguales entre las 7 celdas de la vecindad y en el viaje sobrevive γ₂ = 0,8. Cada celda <b>suma lo que le llega</b>:</p>
+      <div class="eq">llegada<sub><i>ij</i></sub> = (γ₂ / 7) · ( <i>e</i><sub><i>ij</i></sub> + Σ<sub>vecinos</sub> <i>e</i><sub><i>kl</i></sub> )</div>
+      <ul>
+        <li><b>Celda infestada:</b> π(t+1) = π − e + llegada</li>
+        <li><b>Celda vacía:</b> los recién llegados se establecen con probabilidad</li>
+      </ul>
+      <div class="eq"><i>p</i><sub>S</sub> = φ + ρ · arctan(llegada), &nbsp;φ = ρ = 1/3</div>
+      <p>Si el sorteo falla, la celda sigue vacía. Al final se acota a [0, 1].</p>
+    </div>
+    <div class="fig"><svg id="sv-ps" aria-label="Probabilidad de supervivencia según la llegada"></svg></div>
+  </div>
+</section>
+
+<!-- 7. Resumen -->
+<section class="slide">
+  <h2>Las tres reglas y sus parámetros</h2>
+  <div class="cols">
+    <div class="scroll card">
+      <table>
+        <thead><tr><th>Regla</th><th>Mira vecinas</th><th>Azar</th></tr></thead>
+        <tbody>
+          <tr><td>1. Crecer o decrecer</td><td>No</td><td>Sí</td></tr>
+          <tr><td>2. Emitir</td><td>Sí, el promedio</td><td>No</td></tr>
+          <tr><td>3. Llegar y establecerse</td><td>Sí, lo que emiten</td><td>Sólo en celdas vacías</td></tr>
+        </tbody>
+      </table>
+      <p style="font-size:15px;color:var(--soft)">Orden en cada año: 1 → 2 → 3. Entre una regla y la siguiente hay que sincronizar.</p>
+    </div>
+    <div class="scroll card">
+      <table>
+        <thead><tr><th>Parámetro</th><th style="text-align:right">Valor</th><th>Significado</th></tr></thead>
+        <tbody id="tb-params"></tbody>
+      </table>
+      <p style="font-size:14px;color:var(--soft)">Valores de la Tabla 2 de Liu &amp; Estep (2025).</p>
+    </div>
+  </div>
+</section>
+
+<!-- 8. Demo -->
+<section class="slide" data-anim="demo">
+  <h2>El autómata funcionando</h2>
+  <div class="ctrl">
+    <button id="d-play" class="on">Pausar</button>
+    <button id="d-step">Un año</button>
+    <button id="d-reset">Reiniciar</button>
+    <label for="d-g1">γ₁ <input id="d-g1" type="range" min="0" max="1" step="0.05" value="0.8"><span id="d-g1v">0,80</span></label>
+    <label for="d-g2">γ₂ <input id="d-g2" type="range" min="0" max="1" step="0.05" value="0.8"><span id="d-g2v">0,80</span></label>
+  </div>
+  <div class="stats"><span><strong id="d-t">0</strong>años</span><span><strong id="d-inf">0</strong>celdas infestadas</span><span><strong id="d-pob">0</strong>densidad total</span></div>
+  <div class="fig" style="flex:1"><canvas id="cv-demo"></canvas><div class="cap">Haz clic para agregar un foco. Demo en el navegador con M = 6 réplicas (el modelo usa 20) para que corra fluido.</div></div>
+</section>
+
+<!-- 9. Por qué se paraleliza -->
+<section class="slide">
+  <h2>Por qué se puede paralelizar: es un stencil</h2>
+  <div class="eq" style="align-self:flex-start">E<sup>(t+1)</sup>[i, j] = f( E<sup>(t)</sup>[i, j], V<sup>(t)</sup>[i, j] )</div>
+  <p class="lead">Cada celda sólo necesita a sus 6 vecinas del año anterior, así que todas se pueden actualizar a la vez si se respetan cuatro cosas:</p>
+  <div class="cols">
+    <div class="card"><h3>Doble buffer</h3>Se lee de P(t) y se escribe en P(t+1); al final se intercambian. Si no, una celda lee a una vecina ya actualizada y hay una condición de carrera.</div>
+    <div class="card"><h3>Gather, no scatter</h3>Cada celda suma lo que le llega en vez de "empujar" a sus vecinas. Así cada hilo escribe sólo en sus celdas y no hacen falta candados.</div>
+    <div class="card"><h3>Azar reproducible</h3>Un RNG por contador: hash(semilla, año, celda, flujo). El resultado no depende de cuántos hilos o procesos hay, y se puede verificar contra la versión secuencial.</div>
+    <div class="card"><h3>Relleno de una celda</h3>Cada bloque tiene una fila y columna extra: en el borde del mapa es la frontera absorbente y entre procesos es el halo.</div>
+  </div>
+</section>
+
+<!-- 10. Híbrida -->
+<section class="slide" data-anim="hibrida">
+  <h2>Paralelización híbrida: MPI entre procesos, hilos dentro</h2>
+  <div class="split">
+    <div>
+      <ul>
+        <li><b>MPI (memoria distribuida):</b> la grilla se reparte en franjas de filas, una por proceso.</li>
+        <li><b>Halos:</b> cada proceso guarda una fila extra arriba y abajo con la copia de la fila borde de su vecino. Se intercambian con <code>Sendrecv</code>.</li>
+        <li><b>Numba (memoria compartida, como OpenMP):</b> dentro de cada proceso, <code>prange</code> reparte las filas entre hilos, igual que <code>#pragma omp parallel for</code>.</li>
+        <li>Ejemplo: 4 nodos × 4 hilos = 16 núcleos en el clúster Xi (SLURM, OpenMPI 4.0.4).</li>
+      </ul>
+    </div>
+    <div class="fig"><canvas id="cv-hibrida"></canvas><div class="cap" id="cap-hibrida">Fase: microescala</div></div>
+  </div>
+</section>
+
+<!-- 11. BSP -->
+<section class="slide" data-anim="bsp">
+  <h2>Cada año es un superpaso BSP</h2>
+  <div class="split">
+    <div class="steps" id="bsp-steps"></div>
+    <div>
+<pre><span class="c"># cada proceso MPI (rank) ejecuta:</span>
+for t in range(años):
+    microescala(P)          <span class="c"># prange: hilos</span>
+    intercambiar_halos(P)   <span class="c"># Sendrecv ↑↓</span>
+    emision(P, E)           <span class="c"># prange</span>
+    intercambiar_halos(E)   <span class="c"># Sendrecv ↑↓</span>
+    actualizacion(P, E, Pn) <span class="c"># prange</span>
+    P, Pn = Pn, P           <span class="c"># doble buffer</span>
+    allreduce(estadísticas)</pre>
+      <p>Dos rondas de comunicación por año: la emisión necesita los vecinos de P, y la actualización necesita lo que emiten los vecinos (E). El costo de comunicar es una fila por vecino, mientras que el cálculo crece con el área del bloque.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 12. Desbalance y experimentos -->
+<section class="slide">
+  <h2>El riesgo: desbalance de carga</h2>
+  <div class="split">
+    <div>
+      <p>Las celdas vacías no pueden crecer, así que la microescala se las salta. Si la plaga está concentrada, <b>el proceso que tiene el foco trabaja mucho más</b> y los otros esperan en el intercambio de halos.</p>
+      <h3>Experimentos planificados</h3>
+      <ul>
+        <li>Escalamiento fuerte con 1, 2, 4, 8 y 16 núcleos: sólo hilos, sólo MPI e híbrido.</li>
+        <li>Bosque ocupado entero (carga pareja) contra un foco central (carga concentrada).</li>
+        <li>Medir el tiempo de cálculo y el de comunicación de cada proceso.</li>
+        <li>Probar un reparto cíclico de filas en vez de bloques.</li>
+      </ul>
+    </div>
+    <div class="fig"><canvas id="cv-desb"></canvas><div class="cap">Ilustración: con bloques, sólo el proceso P1 tiene celdas infestadas.</div></div>
+  </div>
+</section>
+
+<!-- 13. Decisiones -->
+<section class="slide">
+  <h2>Qué cambiamos respecto del paper, y por qué</h2>
+  <div class="cols">
+    <div class="card"><h3>Vecindad local</h3>El paper promedia sobre "vecindades de interacción": grupos de celdas infestadas que pueden cruzar todo el mapa. Usamos la vecindad de 7 celdas para que cada celda dependa sólo de sus vecinas y se pueda paralelizar con halos.</div>
+    <div class="card"><h3>Supervivencia</h3>En el paper, una celda que falla el sorteo queda en 0 aunque ya estuviera infestada. Lo aplicamos sólo a colonizaciones nuevas.</div>
+    <div class="card"><h3>Sin inclusión ni estacionalidad</h3>Por ahora todas las celdas participan en la dispersión, y la natalidad no varía en el año. Ambas quedan como extensiones.</div>
+    <div class="card"><h3>A validar</h3>Comparar la velocidad de expansión con la del paper, y calibrar con la imagen aérea de ScienceBase.</div>
+  </div>
+</section>
+
+<!-- 14. Referencias -->
+<section class="slide">
+  <h2>Referencias</h2>
+  <ul>
+    <li>Liu, Y. &amp; Estep, D. (2025). A multiscale stochastic cellular automata model for dispersion of mountain pine beetles. <i>Royal Society Open Science</i>, 12: 241934. <a href="https://doi.org/10.1098/rsos.241934">doi.org/10.1098/rsos.241934</a></li>
+    <li>Código de los autores: <a href="https://github.com/Irene-liu-724/MPB-Infestation">github.com/Irene-liu-724/MPB-Infestation</a></li>
+    <li>Bone, C. et al. (2006). A fuzzy-constrained cellular automata model of forest insect infestations. <i>Ecological Modelling</i>, 192: 107–125.</li>
+    <li>Carroll, A. et al. (2017). MPBSpread: autómata celular para evaluar el control del escarabajo en Alberta.</li>
+    <li>Fachada, N. et al. (2017). Parallelization strategies for spatial agent-based models. <i>Int. J. Parallel Programming</i>, 45: 449–481.</li>
+    <li>Material del curso: OpenMP y Numba, MPI y Dask, modelos BSP, clúster Xi.</li>
+  </ul>
+  <p class="lead">Repositorio del proyecto: <a href="https://github.com/OrejiNet/mountain-pine-beetle-cellular-automata-hpc">github.com/OrejiNet/mountain-pine-beetle-cellular-automata-hpc</a></p>
+</section>
+
+</main>
+<nav aria-label="Navegación de diapositivas">
+  <button id="prev" aria-label="Anterior">←</button>
+  <span id="num">1 / 14</span>
+  <button id="next" aria-label="Siguiente">→</button>
+  <div class="bar"><i id="bar"></i></div>
+  <button id="full">Pantalla completa</button>
+</nav>
+
+<script>
+{
+const deck = document.getElementById('deck');
+const slides = [...deck.querySelectorAll('.slide')];
+const SQ3 = Math.sqrt(3);
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const PAR = [[-1,0],[1,0],[-1,-1],[0,-1],[-1,1],[0,1]];
+const IMP = [[-1,0],[1,0],[0,-1],[1,-1],[0,1],[1,1]];
+const neigh = (i,j,R,C) => (j%2 ? IMP : PAR).map(([a,b]) => [i+a, j+b]).filter(([a,b]) => a>=0 && a<R && b>=0 && b<C);
+
+/* ---------- navegación ---------- */
+let cur = 0;
+const go = k => { cur = Math.max(0, Math.min(slides.length-1, k)); slides[cur].scrollIntoView({behavior: reduce ? 'auto' : 'smooth', inline:'start', block:'nearest'}); };
+document.getElementById('prev').onclick = () => go(cur-1);
+document.getElementById('next').onclick = () => go(cur+1);
+document.getElementById('full').onclick = () => {
+  try { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen().catch(()=>{}); } catch(e) {}
+};
+addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  if (['ArrowRight','PageDown',' '].includes(e.key)) { e.preventDefault(); go(cur+1); }
+  if (['ArrowLeft','PageUp'].includes(e.key)) { e.preventDefault(); go(cur-1); }
+  if (e.key === 'Home') go(0);
+  if (e.key === 'End') go(slides.length-1);
+});
+const visible = new Set();
+const io = new IntersectionObserver(es => {
+  for (const e of es) {
+    const k = slides.indexOf(e.target);
+    if (e.isIntersecting) visible.add(k); else visible.delete(k);
+    if (e.isIntersecting && e.intersectionRatio > 0.55) {
+      cur = k;
+      document.getElementById('num').textContent = (k+1) + ' / ' + slides.length;
+      document.getElementById('bar').style.width = ((k+1)/slides.length*100) + '%';
+    }
+  }
+}, {root: deck, threshold: [0, 0.55]});
+slides.forEach(s => io.observe(s));
+const isOn = el => visible.has(slides.indexOf(el.closest('.slide')));
+
+/* ---------- utilidades de canvas ---------- */
+function setup(cv, draw) {
+  const ctx = cv.getContext('2d');
+  const st = {ctx, W:0, H:0};
+  const fit = () => {
+    const r = cv.getBoundingClientRect(), dpr = Math.min(devicePixelRatio || 1, 2);
+    if (!r.width || !r.height) return;
+    cv.width = r.width*dpr; cv.height = r.height*dpr;
+    ctx.setTransform(dpr,0,0,dpr,0,0); st.W = r.width; st.H = r.height; draw && draw(st);
+  };
+  const ro = new ResizeObserver(fit); ro.observe(cv); st.fit = fit;
+  return st;
+}
+function hexPath(ctx, x, y, s) {
+  ctx.beginPath();
+  for (let k=0;k<6;k++){ const a=Math.PI/3*k; ctx.lineTo(x+s*Math.cos(a), y+s*Math.sin(a)); }
+  ctx.closePath();
+}
+// tamaño y origen para que R x C hexágonos llenen W x H
+function layout(R, C, W, H, pad=10) {
+  const s = Math.min((W-2*pad)/(1.5*C+0.5), (H-2*pad)/(SQ3*(R+0.5)));
+  const gw = s*(1.5*C+0.5), gh = s*SQ3*(R+0.5);
+  return {s, ox:(W-gw)/2 + s, oy:(H-gh)/2 + s*SQ3/2};
+}
+const center = (L,i,j) => [L.ox + 1.5*L.s*j, L.oy + SQ3*L.s*(i + 0.5*(j%2))];
+function heat(v) { // 0..1 -> color (durazno -> coral -> rojo)
+  const st = [[255,196,138],[255,122,107],[226,71,94]];
+  const t = Math.min(1, Math.max(0, v))*2, k = Math.min(1, Math.floor(t)), f = t-k;
+  const c = st[k].map((a,q) => Math.round(a + (st[k+1][q]-a)*f));
+  return `rgb(${c[0]},${c[1]},${c[2]})`;
+}
+function pine(ctx, x, base, h, col) {
+  ctx.fillStyle = col;
+  ctx.fillRect(x - h*0.025, base - h*0.12, h*0.05, h*0.12);
+  for (let k=0;k<4;k++){ const f=k/4, y=base - h*(0.12+0.75*f), a=h*0.42*(1-0.7*f);
+    ctx.beginPath(); ctx.moveTo(x-a/2,y); ctx.lineTo(x+a/2,y); ctx.lineTo(x,y-h*0.42); ctx.fill(); }
+}
+let seed = 7; const rnd = () => (seed = seed*16807 % 2147483647) / 2147483647;
+
+/* ---------- modelo (versión local, igual a las reglas de las diapositivas) ---------- */
+const P0 = {b:1, d:0.2, C:100, N:100, M:20, gamma1:0.8, gamma2:0.8, phi:1/3, rho:1/3};
+function microCell(v, p, M) {
+  const x0 = Math.round(v*p.C); if (x0 === 0) return 0;
+  let acc = 0;
+  for (let l=0;l<M;l++){ let X=x0;
+    for (let k=0;k<p.N;k++){ const bn=p.b*X*(1-X/p.C)/p.N, dn=p.d*X/p.N, u=Math.random();
+      if (u<bn) X++; else if (u<bn+dn) X--; }
+    acc += X; }
+  return acc/(M*p.C);
+}
+function paso(P, R, C, p, M) {
+  const Q = P.map(v => microCell(v, p, M));
+  const E = new Float64Array(R*C);
+  for (let i=0;i<R;i++) for (let j=0;j<C;j++){
+    const v = Q[i*C+j]; let s = v; for (const [a,b] of neigh(i,j,R,C)) s += Q[a*C+b];
+    const m = s/7; E[i*C+j] = v>m ? p.gamma1*(v-m) : 0; }
+  const N = new Float64Array(R*C);
+  for (let i=0;i<R;i++) for (let j=0;j<C;j++){
+    const k=i*C+j; let s=E[k]; for (const [a,b] of neigh(i,j,R,C)) s += E[a*C+b];
+    const lleg = p.gamma2/7*s; let nv;
+    if (Q[k] === 0) nv = (lleg>0 && Math.random() < p.phi + p.rho*Math.atan(lleg)) ? lleg : 0;
+    else nv = Q[k] - E[k] + lleg;
+    N[k] = Math.min(1, nv); }
+  return N;
+}
+
+/* ---------- 1. portada: bosque + mancha que crece ---------- */
+{
+  const cv = document.getElementById('cv-portada');
+  const R=22, C=60; let G = new Float64Array(R*C); G[11*C+22]=1; G[12*C+23]=0.7;
+  const p = {...P0}; let last = 0;
+  const st = setup(cv, () => draw());
+  function draw() {
+    const {ctx,W,H} = st; if (!W) return;
+    const g = ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,'#140f2e'); g.addColorStop(.45,'#3a2465'); g.addColorStop(.75,'#a4508b'); g.addColorStop(1,'#f08a7b');
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+    seed = 3; ctx.fillStyle='rgba(255,240,230,.7)';
+    for (let k=0;k<120;k++){ const x=rnd()*W, y=rnd()*H*0.45; ctx.fillRect(x,y,1.5,1.5); }
+    const sx=W*0.76, sy=H*0.62, sr=Math.min(W,H)*0.2;
+    const sg=ctx.createLinearGradient(0,sy-sr,0,sy+sr); sg.addColorStop(0,'#ffe3a3'); sg.addColorStop(1,'#ff7a8a');
+    ctx.fillStyle=sg; ctx.beginPath(); ctx.arc(sx,sy,sr,0,7); ctx.fill();
+    const L = layout(R, C, W, H*0.72, 0);
+    for (let i=0;i<R;i++) for (let j=0;j<C;j++){ const [x,y]=center(L,i,j); const v=G[i*C+j];
+      hexPath(ctx,x,y,L.s*0.9);
+      if (v>0){ ctx.globalAlpha=0.25+0.5*v; ctx.fillStyle=heat(v); ctx.fill(); ctx.globalAlpha=1; }
+      else { ctx.strokeStyle='rgba(255,220,240,.07)'; ctx.stroke(); } }
+    seed = 11;
+    for (const [base,hh,col,rojo] of [[H*0.8,H*0.16,'#341e48',0.35],[H*0.9,H*0.22,'#201230',0.3],[H*1.0,H*0.3,'#10091a',0]]){
+      ctx.fillStyle=col; ctx.fillRect(0,base-3,W,H-base+3);
+      for (let x=-20;x<W+40;){ const h=hh*(0.7+rnd()*0.55);
+        const r = rnd(); pine(ctx,x,base+rnd()*8,h, rojo && r<rojo && Math.abs(x-W*0.4)<W*0.32 ? (base<H*0.85?'#b04a3c':'#7a2c2c') : col);
+        x += h*(0.22+rnd()*0.14); } }
+    const v = ctx.createLinearGradient(0,H*0.35,0,H); v.addColorStop(0,'rgba(23,17,43,0)'); v.addColorStop(1,'rgba(23,17,43,.55)');
+    ctx.fillStyle=v; ctx.fillRect(0,0,W,H);
+  }
+  function tick(ts){ requestAnimationFrame(tick);
+    if (reduce || !isOn(cv) || ts-last < 700) return; last = ts;
+    G = paso(G,R,C,p,3); if (G.reduce((a,b)=>a+b,0) > R*C*0.55){ G=new Float64Array(R*C); G[11*C+22]=1; }
+    draw(); }
+  requestAnimationFrame(tick);
+}
+
+/* ---------- 2. bosque con ataque rojo ---------- */
+{
+  const cv = document.getElementById('cv-bosque');
+  const st = setup(cv, ({ctx,W,H}) => {
+    const g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,'#2a1d4d'); g.addColorStop(1,'#a4508b');
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+    seed = 5; const fx=W*0.5;
+    for (const [base,hh,col] of [[H*0.55,H*0.18,'#4a2f66'],[H*0.72,H*0.24,'#33204d'],[H*0.92,H*0.32,'#1b1029']]){
+      ctx.fillStyle=col; ctx.fillRect(0,base-3,W,H-base+3);
+      for (let x=-10;x<W+30;){ const h=hh*(0.7+rnd()*0.5), d=Math.abs(x-fx)/(W*0.3);
+        const muerto = rnd() > d*0.9 + 0.1;
+        pine(ctx,x,base+rnd()*6,h, muerto ? (base<H*0.6?'#c9654d':base<H*0.8?'#b04a3c':'#8a3434') : col);
+        x += h*(0.24+rnd()*0.14); } }
+  });
+}
+
+/* ---------- 3. vecindad interactiva ---------- */
+{
+  const cv = document.getElementById('cv-vecindad');
+  const R=7, C=9; let sel=[3,4];
+  const st = setup(cv, () => draw());
+  function draw(){ const {ctx,W,H}=st; if(!W) return;
+    ctx.clearRect(0,0,W,H);
+    const L = layout(R,C,W,H-40,24); const ns = neigh(sel[0],sel[1],R,C).map(([a,b])=>a+','+b);
+    ctx.font = `600 ${Math.max(11,L.s*0.34)}px "Nunito Sans",sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    for (let i=0;i<R;i++) for (let j=0;j<C;j++){ const [x,y]=center(L,i,j);
+      const es = i===sel[0]&&j===sel[1], nb = ns.includes(i+','+j);
+      hexPath(ctx,x,y,L.s*0.94);
+      ctx.fillStyle = es ? '#ff7a6b' : nb ? '#ffc48a' : (j%2 ? '#2b2150' : '#30255a'); ctx.fill();
+      ctx.strokeStyle='#4a3a78'; ctx.lineWidth=1; ctx.stroke();
+      ctx.fillStyle = es||nb ? '#2a0f1a' : '#9c8bb8';
+      if (L.s > 22) ctx.fillText(i+','+j, x, y); }
+    ctx.fillStyle='#cdbcd9'; ctx.textAlign='left'; ctx.font='600 14px "Nunito Sans",sans-serif';
+    ctx.fillText(`Celda (${sel[0]}, ${sel[1]}): columna ${sel[1]%2 ? 'impar' : 'par'}`, 14, 18);
+  }
+  const pick = e => { const r=cv.getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top;
+    const L = layout(R,C,st.W,st.H-40,24); let best=null, bd=1e9;
+    for (let i=0;i<R;i++) for (let j=0;j<C;j++){ const [x,y]=center(L,i,j), d=(x-mx)**2+(y-my)**2; if(d<bd){bd=d;best=[i,j];} }
+    if (best && bd < (L.s*1.1)**2 && (best[0]!==sel[0]||best[1]!==sel[1])) { sel=best; draw(); } };
+  cv.addEventListener('pointermove', pick); cv.addEventListener('pointerdown', pick);
+}
+
+/* ---------- 4. trayectorias de la microescala ---------- */
+{
+  const cv = document.getElementById('cv-micro');
+  const st = setup(cv, () => draw()); let tray = [];
+  function simular(){ tray=[]; const p=P0, Y=10;
+    for (let l=0;l<20;l++){ let X=10; const pts=[X];
+      for (let t=0;t<Y;t++){ for (let k=0;k<p.N;k++){ const bn=p.b*X*(1-X/p.C)/p.N, dn=p.d*X/p.N, u=Math.random();
+          if(u<bn)X++; else if(u<bn+dn)X--; } pts.push(X); }
+      tray.push(pts); } draw(); }
+  function draw(){ const {ctx,W,H}=st; if(!W||!tray.length) return; ctx.clearRect(0,0,W,H);
+    const m={l:48,r:20,t:24,b:104}, w=W-m.l-m.r, h=H-m.t-m.b, X=t=>m.l+t/10*w, Y=v=>m.t+h-v/100*h;
+    ctx.strokeStyle='#3a2d5c'; ctx.fillStyle='#cdbcd9'; ctx.font='14px "Nunito Sans",sans-serif'; ctx.lineWidth=1;
+    for (const v of [0,20,40,60,80,100]){ ctx.beginPath(); ctx.moveTo(m.l,Y(v)); ctx.lineTo(m.l+w,Y(v)); ctx.stroke(); ctx.textAlign='right'; ctx.fillText(v, m.l-8, Y(v)+5); }
+    ctx.textAlign='center'; for (let t=0;t<=10;t+=2) ctx.fillText(t, X(t), m.t+h+20);
+    ctx.fillText('años', m.l+w/2, m.t+h+40);
+    ctx.setLineDash([6,5]); ctx.strokeStyle='#ffc48a'; ctx.beginPath(); ctx.moveTo(m.l,Y(80)); ctx.lineTo(m.l+w,Y(80)); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle='#ffc48a'; ctx.textAlign='left'; ctx.fillText('equilibrio C(1 − d/b) = 80', m.l+8, Y(80)-8);
+    ctx.lineWidth=1.6; for (const pts of tray){ ctx.strokeStyle='rgba(255,122,107,.55)'; ctx.beginPath(); pts.forEach((v,t)=>ctx.lineTo(X(t),Y(v))); ctx.stroke(); }
+    ctx.fillStyle='#cdbcd9'; ctx.textAlign='left'; ctx.fillText('individuos en la celda', m.l, 16);
+  }
+  document.getElementById('b-micro').onclick = simular; simular();
+}
+
+/* ---------- 5. ejemplo de emisión ---------- */
+{
+  const sv = document.getElementById('sv-emision');
+  const vals = [0.9, 0.2, 0.4, 0.0, 0.6, 0.3, 0.1]; // centro + 6 vecinos
+  const m = vals.reduce((a,b)=>a+b,0)/7, e = vals[0]>m ? 0.8*(vals[0]-m) : 0;
+  const pos = [[0,0],[0,-1],[0,1],[-0.866,-0.5],[-0.866,0.5],[0.866,-0.5],[0.866,0.5]];
+  const s=46, cx=170, cy=190, d=s*SQ3;
+  const hx = (x,y,r) => Array.from({length:6},(_,k)=>`${x+r*Math.cos(k*Math.PI/3+Math.PI/6)},${y+r*Math.sin(k*Math.PI/3+Math.PI/6)}`).join(' ');
+  let h = '';
+  pos.forEach(([a,b],k) => { const x=cx+a*d, y=cy+b*d;
+    h += `<polygon points="${hx(x,y,s*0.97)}" fill="${vals[k]>0?heat(vals[k]):'#2b2150'}" fill-opacity="${k?0.55+0.45*vals[k]:1}" stroke="${k?'#4a3a78':'#fff'}" stroke-width="${k?1:3}"/>`;
+    h += `<text x="${x}" y="${y+6}" text-anchor="middle" font-family="Poppins, sans-serif" font-size="18" font-weight="700" fill="${vals[k]>0.15?'#2a0f1a':'#f6ece6'}">${vals[k].toFixed(1).replace('.',',')}</text>`; });
+  const f = v => v.toFixed(2).replace('.',',');
+  h += `<g font-family="Nunito Sans, sans-serif" font-size="17" fill="#f6ece6">
+    <text x="330" y="120">π = <tspan font-weight="700" fill="#ffc48a">0,90</tspan></text>
+    <text x="330" y="160">media = 2,5 / 7 = <tspan font-weight="700" fill="#ffc48a">${f(m)}</tspan></text>
+    <text x="330" y="200">π &gt; media, así que emite:</text>
+    <text x="330" y="236">e = 0,8 · (0,90 − ${f(m)})</text>
+    <text x="330" y="276" font-size="22" font-family="Poppins, sans-serif" font-weight="700" fill="#ff7a6b">e = ${f(e)}</text>
+    <text x="330" y="318" fill="#cdbcd9" font-size="15">Ejemplo con números inventados</text></g>`;
+  sv.innerHTML = h;
+}
+
+/* ---------- 6. curva de supervivencia ---------- */
+{
+  const sv = document.getElementById('sv-ps');
+  const draw = () => { const W=sv.clientWidth, H=sv.clientHeight; if(!W) return;
+    const m={l:56,r:24,t:40,b:64}, w=W-m.l-m.r, h=H-m.t-m.b, X=v=>m.l+v/1*w, Y=v=>m.t+h-v*h;
+    let pts=''; for (let k=0;k<=100;k++){ const v=k/100; pts+=`${X(v)},${Y(1/3+Math.atan(v)/3)} `; }
+    let g='';
+    for (const v of [0,0.25,0.5,0.75,1]) g+=`<line x1="${m.l}" x2="${m.l+w}" y1="${Y(v)}" y2="${Y(v)}" stroke="#3a2d5c"/><text x="${m.l-8}" y="${Y(v)+5}" text-anchor="end">${String(v).replace('.',',')}</text>`;
+    for (const v of [0,0.25,0.5,0.75,1]) g+=`<text x="${X(v)}" y="${m.t+h+22}" text-anchor="middle">${String(v).replace('.',',')}</text>`;
+    const v1=1, y1=1/3+Math.atan(1)/3;
+    sv.innerHTML = `<g font-family="Nunito Sans, sans-serif" font-size="14" fill="#cdbcd9">${g}
+      <text x="${m.l+w/2}" y="${m.t+h+46}" text-anchor="middle">llegada (densidad que llega a la celda vacía)</text>
+      <text x="${m.l}" y="22">probabilidad de establecerse p<tspan font-size="11" dy="3">S</tspan></text></g>
+      <polyline points="${pts}" fill="none" stroke="#ff7a6b" stroke-width="3.5"/>
+      <circle cx="${X(v1)}" cy="${Y(y1)}" r="6" fill="#ffc48a"/>
+      <text x="${X(v1)-10}" y="${Y(y1)-14}" text-anchor="end" font-family="Nunito Sans, sans-serif" font-size="15" fill="#ffc48a">${y1.toFixed(2).replace('.',',')} con llegada 1</text>`; };
+  const ro = new ResizeObserver(draw); ro.observe(sv);
+}
+
+/* ---------- 7. tabla de parámetros ---------- */
+document.getElementById('tb-params').innerHTML = [
+  ['b','1,0','natalidad'],['d','0,2','mortalidad'],['C','100','capacidad de carga por celda'],
+  ['N','100','pasos microscópicos por año'],['M','20','réplicas por celda'],
+  ['γ₁','0,8','fracción del exceso que emigra'],['γ₂','0,8','fracción que sobrevive al viaje'],
+  ['φ','1/3','supervivencia base'],['ρ','1/3','supervivencia según la densidad']
+].map(([a,b,c]) => `<tr><td>${a}</td><td class="n">${b}</td><td>${c}</td></tr>`).join('');
+
+/* ---------- 8. demo ---------- */
+{
+  const cv = document.getElementById('cv-demo');
+  const R=30; let C=52; const p={...P0}; let G, t, play=true, last=0;
+  const st = setup(cv, () => { const c = Math.max(30, Math.min(110, Math.round(st.W/(st.H-34)*SQ3*R/1.5)));
+    if (c !== C || !G) { C = c; reset(); } else draw(); });
+  function reset(){ G=new Float64Array(R*C); G[15*C+Math.floor(C/2)]=1; t=0; stats(); draw(); }
+  function stats(){ document.getElementById('d-t').textContent=t;
+    document.getElementById('d-inf').textContent=G.reduce((a,v)=>a+(v>0),0);
+    document.getElementById('d-pob').textContent=G.reduce((a,v)=>a+v,0).toFixed(1).replace('.',','); }
+  function draw(){ const {ctx,W,H}=st; if(!W) return; ctx.clearRect(0,0,W,H);
+    const L=layout(R,C,W,H-34,10);
+    for (let i=0;i<R;i++) for (let j=0;j<C;j++){ const [x,y]=center(L,i,j), v=G[i*C+j];
+      hexPath(ctx,x,y,L.s*0.93); ctx.fillStyle = v>0 ? heat(v) : '#2a2049'; ctx.fill(); } }
+  const step = () => { G=paso(G,R,C,p,6); t++; stats(); draw(); };
+  const bp = document.getElementById('d-play');
+  bp.onclick = () => { play=!play; bp.textContent = play?'Pausar':'Reproducir'; bp.classList.toggle('on',play); };
+  document.getElementById('d-step').onclick = step;
+  document.getElementById('d-reset').onclick = reset;
+  for (const [id,key] of [['d-g1','gamma1'],['d-g2','gamma2']]){ const el=document.getElementById(id);
+    el.oninput = () => { p[key]=+el.value; document.getElementById(id+'v').textContent=(+el.value).toFixed(2).replace('.',','); }; }
+  cv.addEventListener('pointerdown', e => { const r=cv.getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top;
+    const L=layout(R,C,st.W,st.H-34,10); let best=-1, bd=1e9;
+    for (let i=0;i<R;i++) for (let j=0;j<C;j++){ const [x,y]=center(L,i,j), d=(x-mx)**2+(y-my)**2; if(d<bd){bd=d;best=i*C+j;} }
+    if (best>=0 && bd<(L.s*1.2)**2){ G[best]=1; stats(); draw(); } });
+  if (reduce) { play=false; bp.textContent='Reproducir'; bp.classList.remove('on'); }
+  if (!G) reset();
+  function tick(ts){ requestAnimationFrame(tick); if (!play || !isOn(cv) || ts-last<260) return; last=ts; step(); }
+  requestAnimationFrame(tick);
+}
+
+/* ---------- 10. híbrida: procesos, hilos y halos ---------- */
+const FASES = [
+  ['Microescala','cálculo local, hilos en paralelo','#ffc48a'],
+  ['Halos de P','Sendrecv con el vecino de arriba y de abajo','#7ac8ff'],
+  ['Emisión','cálculo local, hilos en paralelo','#ffc48a'],
+  ['Halos de E','Sendrecv con el vecino de arriba y de abajo','#7ac8ff'],
+  ['Actualización','cálculo local + doble buffer','#ffc48a'],
+  ['Allreduce','estadísticas globales y barrera del superpaso','#c99bff']
+];
+let fase = 0;
+setInterval(() => { if (!reduce) fase = (fase+1) % FASES.length; }, 1400);
+{
+  const cv = document.getElementById('cv-hibrida'), cap = document.getElementById('cap-hibrida');
+  const st = setup(cv, () => draw()), NP=4, TH=4, R=24, C=34;
+  const cols = ['#ff7a6b','#ffc48a','#9fd18b','#7ac8ff'];
+  let f0 = -1, pulse = 0;
+  function draw(){ const {ctx,W,H}=st; if(!W) return; ctx.clearRect(0,0,W,H);
+    const L = layout(R,C,W-70,H-40,12), comm = fase===1||fase===3, calc = fase===0||fase===2||fase===4;
+    for (let i=0;i<R;i++){ const rk=Math.floor(i/(R/NP)), loc=i%(R/NP), th=Math.floor(loc/(R/NP/TH));
+      const borde = loc===0 || loc===R/NP-1;
+      for (let j=0;j<C;j++){ const [x,y]=center(L,i,j);
+        hexPath(ctx,x,y,L.s*0.92);
+        ctx.fillStyle = cols[rk]; ctx.globalAlpha = calc ? 0.25 + 0.5*((th+Math.floor(pulse))%TH===0 ? 1 : 0.35) : 0.3;
+        if (comm && borde) { ctx.fillStyle = '#ffffff'; ctx.globalAlpha = 0.55 + 0.4*Math.sin(pulse*3); }
+        if (fase===5) ctx.globalAlpha = 0.45;
+        ctx.fill(); ctx.globalAlpha=1; } }
+    ctx.font='600 14px "Nunito Sans",sans-serif'; ctx.textBaseline='middle';
+    for (let r=0;r<NP;r++){ const [,y0]=center(L,r*R/NP,0), [,y1]=center(L,(r+1)*R/NP-1,0), xr=center(L,0,C-1)[0]+L.s*1.4;
+      ctx.fillStyle=cols[r]; ctx.fillRect(xr, y0-L.s*0.8, 5, y1-y0+L.s*1.6);
+      ctx.fillText('P'+r, xr+12, (y0+y1)/2-9); ctx.fillStyle='#cdbcd9'; ctx.fillText(TH+' hilos', xr+12, (y0+y1)/2+10);
+      if (comm && r<NP-1){ ctx.strokeStyle='#ffffff'; ctx.lineWidth=2; const xa=center(L,0,C-1)[0]+L.s*0.2, ya=y1+L.s*0.9;
+        ctx.beginPath(); ctx.moveTo(xa-6,ya-10); ctx.lineTo(xa-6,ya+10); ctx.moveTo(xa+6,ya+10); ctx.lineTo(xa+6,ya-10); ctx.stroke(); } }
+  }
+  function tick(){ requestAnimationFrame(tick); if (!isOn(cv)) return;
+    pulse += reduce ? 0 : 0.04;
+    if (f0!==fase){ f0=fase; cap.textContent = 'Fase: ' + FASES[fase][0].toLowerCase() + ' — ' + FASES[fase][1]; }
+    draw(); }
+  requestAnimationFrame(tick);
+}
+
+/* ---------- 11. pasos BSP ---------- */
+{
+  const box = document.getElementById('bsp-steps');
+  box.innerHTML = FASES.map(([a,b,c]) => `<div class="step"><span class="dot" style="background:${c}"></span><div><b style="color:var(--ink)">${a}</b><br><span style="color:var(--soft);font-size:15px">${b}</span></div></div>`).join('');
+  const items = [...box.children];
+  setInterval(() => items.forEach((el,k) => el.classList.toggle('act', k===fase)), 200);
+}
+
+/* ---------- 12. desbalance ---------- */
+{
+  const cv = document.getElementById('cv-desb');
+  const R=24, C=30, NP=4; let G=new Float64Array(R*C); G[9*C+15]=1;
+  const p={...P0}; for (let k=0;k<9;k++) G=paso(G,R,C,p,4);
+  const cols=['#ff7a6b','#ffc48a','#9fd18b','#7ac8ff'];
+  const st = setup(cv, ({ctx,W,H}) => { ctx.clearRect(0,0,W,H);
+    const L=layout(R,C,W-150,H-40,12), carga=[0,0,0,0];
+    for (let i=0;i<R;i++) for (let j=0;j<C;j++){ const rk=Math.floor(i/(R/NP)), v=G[i*C+j], [x,y]=center(L,i,j);
+      if (v>0) carga[rk]++;
+      hexPath(ctx,x,y,L.s*0.92); ctx.fillStyle = v>0 ? heat(v) : cols[rk]; ctx.globalAlpha = v>0 ? 1 : 0.18; ctx.fill(); ctx.globalAlpha=1; }
+    const mx=Math.max(...carga,1), x0=center(L,0,C-1)[0]+L.s*2;
+    ctx.font='600 14px "Nunito Sans",sans-serif'; ctx.textBaseline='middle';
+    for (let r=0;r<NP;r++){ const [,y]=center(L,(r+0.5)*R/NP,0);
+      ctx.fillStyle=cols[r]; ctx.fillText('P'+r, x0, y-12);
+      ctx.fillRect(x0, y+2, Math.max(2,(W-x0-16)*carga[r]/mx), 12);
+      ctx.fillStyle='#cdbcd9'; ctx.fillText(carga[r]+(carga[r]===1?' celda':' celdas'), x0+30, y-12); }
+  });
+}
+}
+</script>
+</body>
+</html>

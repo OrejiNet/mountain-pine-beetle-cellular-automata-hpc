@@ -19,6 +19,8 @@ Modelo base: [Liu & Estep (2025), *Royal Society Open Science*](https://doi.org/
 
 Detalles: [`docs/modelo.md`](docs/modelo.md) y [`docs/paralelizacion.md`](docs/paralelizacion.md).
 
+**Presentación de las reglas y la paralelización híbrida:** [`docs/presentacion/index.html`](docs/presentacion/index.html). Descárgala y ábrela en el navegador; se navega con las flechas del teclado.
+
 ## Estructura
 
 ```
@@ -38,6 +40,7 @@ datos/            mapas de entrada (.npy)
 resultados/       salidas (no se versionan)
 docs/             modelo, paralelización, referencias
   papers/         paper base en PDF
+  presentacion/   presentación HTML (reglas, demo en vivo, MPI + Numba)
 ```
 
 ## Instalación
